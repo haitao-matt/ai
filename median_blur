@@ -1,0 +1,69 @@
+import cv2
+import numpy as np
+import sys
+import datetime
+
+def padding_size(img, padding_way):
+    print('befor padding shape:', img.shape)
+    extend_num = int((kernel_size - 1) / 2)
+    if padding_way == 'REPLICA':
+        for i in range(extend_num):
+            # extend row
+            img = np.insert(img, 0, values=img[0, :], axis=0)
+            img = np.vstack((img, img[-1, :]))
+
+            # extend column
+            img = np.insert(img, 0, values=img[:, 0], axis=1)
+            img = np.hstack((img, img[:, -1][:, np.newaxis]))
+    elif padding_way == 'ZERO':
+        for i in range(extend_num):
+            # extend row
+            img = np.insert(img, 0, values=0, axis=0)
+            img = np.vstack((img, np.zeros((1, img.shape[1]))))
+
+            # extend column
+            img = np.insert(img, 0, values=0, axis=1)
+            img = np.hstack((img, np.zeros((img.shape[0], 1))))
+    else:
+        print('padding_way model error.')
+        sys.exit(1)
+    print('after padding shape:', img.shape)
+    return img
+
+def median_Blur(img, kernel, padding_way):
+    H, W = img.shape
+    p_img = padding_size(img, padding_way)
+    blur_img = np.zeros([H,W])
+    blur_img = blur_img.astype(img.dtype)
+    for i in range(H):
+        for j in range(W):
+            temp = p_img[i:i + kernel_size, j:j + kernel_size]
+            temp = np.multiply(temp, kernel)
+            blur_img[i,j] = temp.sum()/(kernel_size ** 2)
+    print('blur_img shape:', blur_img.shape)
+
+    stop_t = datetime.datetime.now()
+    print('the process running %r seconds.' % (stop_t - start_t).seconds)
+
+    # draw picture
+    # draw_picture(img, blur_img)
+
+def draw_picture(img, blur_img):
+    cv2.imshow('original', img)
+    cv2.imshow('blur_img', blur_img)
+    key = cv2.waitKey()
+    if key == 27:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    start_t = datetime.datetime.now()
+    img = cv2.imread('./Lenna.jpg', 0)
+
+    # initialize kernel size
+    kernel_size = 5
+
+    # padding_way: REPLICA ZERO
+    padding_way = 'ZERO'
+    kernel = np.ones((kernel_size ** 2)).reshape(kernel_size,kernel_size)
+    median_Blur(img, kernel, padding_way)
